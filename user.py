@@ -1,10 +1,12 @@
 import chess
 from chess import Board
 
+
 class User(object):
     """
     welcome to my user class, please enjoy your stay
     """
+
     def __init__(self, player_ID):
         """
         Init is called every time someone logs back in, so we're going to throw
@@ -16,10 +18,12 @@ class User(object):
 
         # is the player online on any device? could be online on multiple
         self.is_online = False
-        # this should be populated whenever we say hello to one of the bois devices
+        # this should be populated when we say hello to boi devices
         self.IP_list = []
 
-        self.games =
+        # a list containing all the games the user has ever played
+        # this cant be a bad use of ram!!!!!
+        self.games = []
 
     def say_hello_to_boi(self, device_IP):
         """
@@ -40,7 +44,7 @@ class User(object):
         self.IP_list.remove(device_IP)
         if self.IP_list == []:
             self.is_online = False
-            self.write_to_disc()
+            self.write_to_disk()
 
     def write_to_disk(self):
         pass
