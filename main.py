@@ -1,4 +1,5 @@
 import socket
+from user import User
 
 PORT_NUMBER = 1337
 
