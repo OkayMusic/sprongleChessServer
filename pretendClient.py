@@ -8,12 +8,6 @@ CHOPS_LOGIN = "POST / HTTP/1.1\r\nContent-Type: AppStart\r\n\r\nFrom: 4321\r\nNa
 SPRONGLE_LOGIN = "POST / HTTP/1.1\r\nContent-Type: AppStart\r\n\r\nFrom: 1234\r\nName: Sprongle"
 
 
-def one_shot_message(socket, target_IP, target_port, message):
-    s.connect((target_IP, target_port))
-    s.send(message)
-    s.close()
-
-
 if __name__ == "__main__":
     target_IP = "192.168.0.21"
     target_port = 1337
