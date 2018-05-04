@@ -7,6 +7,10 @@ class Server(object):
     """
     welcome to my server class, please enjoy your stay
     """
+    OK = "HTTP/1.1 200 OK\r\n"
+    BAD = "HTTP/1.1 400 Bad Request\r\n"
+    LEN = "Content-Length: "
+    TYPE = "Content-Type: "
 
     def __init__(self, port):
         """
@@ -73,19 +77,19 @@ class Server(object):
                 # print "*-------CONTENT-TYPE-------*\n", content_type
 
                 if content_type == "AppStart":
-                    self.handle_AppStart(addr, payload)
+                    self.handle_AppStart(connection, payload)
                 elif content_type == "ChessMove":
-                    self.handle_ChessMove(payload)
+                    self.handle_ChessMove(connection, payload)
                 elif content_type == "GameStateRequest":
                     self.handle_GameStateRequest(connection, payload)
                 elif content_type == "AppClose":
-                    self.handle_AppClose(addr, payload)
+                    self.handle_AppClose(connection, payload)
             except:
                 print "Closing connection."
                 connection.close()
                 return  # end thread execution here
 
-    def handle_AppStart(self, addr, payload):
+    def handle_AppStart(self, connection, payload):
         """
         Called whenever we receive an AppStart POST request.
         """
@@ -103,16 +107,25 @@ class Server(object):
         # if the user is already in the active player dict, we add this IP to the
         # user's IP_list
         try:
-            if user_name not in self.active_player_dict:
+            if user_ID not in self.active_player_dict:
                 self.active_player_dict[user_ID] = User(user_ID)
                 self.active_player_dict[user_ID].say_hello_to_boi()
+                reply = "Successfully said hello to boi"
+            else:
+                reply = ("This boi was already flagged as active. This "
+                         "is probably another of boi's devices. If you "
+                         "see this message frequently it is possible "
+                         "that boi is not getting said goodbye to properly.")
+            connection.send(Server.OK + Server.LEN +
+                            str(len(reply)) + "\r\n\r\n" + reply)
         except:
             # the only way this could fail is if POST request was invalid
-            print "user_ID not provided!"
+            reply = "user_ID not provided!"
+            connection.send(BAD, )
 
         print self.active_player_dict
 
-    def handle_AppClose(self, addr, payload):
+    def handle_AppClose(self, connection, payload):
         """
         Called whenever we receive an AppClose POST request.
         """
@@ -130,7 +143,7 @@ class Server(object):
             print e
             print "You probably tried to disconnect a player who was offline"
 
-    def handle_ChessMove(self, payload):
+    def handle_ChessMove(self, connection, payload):
         """
         Called whenever we receive a ChessMove POST request.
         """
@@ -153,6 +166,10 @@ class Server(object):
         try:
             self.active_player_dict[user1_ID].record_chess_move(game_ID, move)
             self.active_player_dict[user2_ID].record_chess_move(game_ID, move)
+            reply = "Move registered and confirmed as legal."
+            connection.send(Server.OK + Server.LEN + str(len(reply)) +
+                            "\r\n\r\n" + reply)
+
         except:
             print "one of the players was offline, log them in and try again"
 
@@ -174,12 +191,12 @@ class Server(object):
         FEN = self.active_player_dict[user_ID].games[game_ID].fen()
         print "Requested FEN: ", FEN
         connection.send(
-            "HTTP/1.1 200 OK\r\nContent-Type: FEN\r\nContent-Length: " +
-            str(len(FEN)) + "\r\n\r\n" + FEN)
+            Server.OK + Server.TYPE + "FEN\r\n" + Server.LEN + str(len(FEN)) +
+            "\r\n\r\n" + FEN)
 
 
 if __name__ == "__main__":
-    PORT = 1337
+    PORT = 1336
 
     MainServer = Server(PORT)
     MainServer.listen()

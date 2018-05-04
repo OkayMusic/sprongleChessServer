@@ -1,4 +1,5 @@
 import chess
+import os
 from chess import Board
 
 
@@ -50,7 +51,7 @@ class User(object):
             print "Move not legal OR incorrectly formatted"
 
         print "FEN: ", self.games[game_ID].fen()
-        # print "Move stack: ", self.games[game_ID].move_stack
+        print "Move stack: ", self.games[game_ID].move_stack
 
     def write_to_disk(self):
         print "Writing data for user number", self.player_ID, "to disk"
