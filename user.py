@@ -15,36 +15,42 @@ class User(object):
         """
         # player's unique sprongleChess ID. One per facebook account
         self.player_ID = player_ID
+        self.name = ""  # player's irl name mmmmmmmmdata
+        #----- more precious user data can go here -----#
 
         # is the player online on any device? could be online on multiple
         self.is_online = False
-        # this should be populated when we say hello to boi devices
-        self.IP_list = []
 
-        # a list containing all the games the user has ever played
+        # a dict containing all the games the user has ever played
         # this cant be a bad use of ram!!!!!
-        self.games = []
+        # dict is indexed by facebook game_ID
+        self.games = {}
 
-    def say_hello_to_boi(self, device_IP):
+    def say_hello_to_boi(self):
         """
-        This should be called whenever a connection is received from a new IP
-        address.
+        Set player to be online and load in their chess games.
         """
         self.is_online = True
-        self.IP_list.append(device_IP)
 
-    def say_goodbye_to_boi(self, device_IP):
+    def say_goodbye_to_boi(self):
         """
-        This should be called whenever a boi logs closes the game on a specific
-        device. By taking the device's IP out of IP_list we make sure we dont
-        keep throwing game updates at that device, and then we check to see if
-        the dude is offline on all devices, in which case we write all his game
-        states to disk and stuff (gone but not forgotten frendly boi).
+        Better write his precious user data to disk. Also sets the user to be
+        offline.
         """
-        self.IP_list.remove(device_IP)
-        if self.IP_list == []:
-            self.is_online = False
-            self.write_to_disk()
+        self.is_online = False
+        self.write_to_disk()
+
+    def record_chess_move(self, game_ID, move):
+        if game_ID not in self.games:  # if the game hasn't started yet
+            self.games[game_ID] = Board()  # loads starting position
+
+        try:
+            self.games[game_ID].push_san(move)
+        except:
+            print "Move not legal OR incorrectly formatted"
+
+        print "FEN: ", self.games[game_ID].fen()
+        # print "Move stack: ", self.games[game_ID].move_stack
 
     def write_to_disk(self):
-        pass
+        print "Writing data for user number", self.player_ID, "to disk"
