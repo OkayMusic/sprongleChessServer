@@ -1,4 +1,5 @@
 import socket
+import random
 import threading
 from user import User
 
@@ -37,7 +38,7 @@ class Server(object):
         print "Server listening on port", self.port, "\n"
         while True:
             connection, addr = self.sock.accept()
-            connection.settimeout(600)
+            connection.settimeout(5)  # time out connection after 5 secs
             threading.Thread(target=self.listen_to_boi,
                              args=(connection, addr)).start()
 
@@ -67,7 +68,7 @@ class Server(object):
                 # parse whatever we were sent to find the content type of the data
                 for lines in data_list:
                     split_line = lines.split(": ")
-                    if split_line[0] == "Content-Type":
+                    if split_line[0] == "Content":
                         content_type = split_line[1]
 
                 # payload of the message formatted as a list, if you want to see what
@@ -78,6 +79,8 @@ class Server(object):
 
                 if content_type == "AppStart":
                     self.handle_AppStart(connection, payload)
+                elif content_type == "GameStart":
+                    self.handle_GameStart(connection, payload)
                 elif content_type == "ChessMove":
                     self.handle_ChessMove(connection, payload)
                 elif content_type == "GameStateRequest":
@@ -139,9 +142,16 @@ class Server(object):
             self.active_player_dict[user_ID].say_goodbye_to_boi()
             del self.active_player_dict[user_ID]
             print self.active_player_dict
+            reply = ("Successfully said goodbye to boi, and wrote all his data "
+                     "to disk.")
         except Exception as e:
             print e
             print "You probably tried to disconnect a player who was offline"
+            reply = ("AppClose failed on the serverside, data could be lost. "
+                     "Are you sure that you didn't try to disconnect a player"
+                     " who is already offline?")
+        connection.send(Server.OK + Server.LEN +
+                        str(len(reply)) + "\r\n\r\n" + reply)
 
     def handle_ChessMove(self, connection, payload):
         """
@@ -164,14 +174,62 @@ class Server(object):
                 move = lines[1]
 
         try:
-            self.active_player_dict[user1_ID].record_chess_move(game_ID, move)
-            self.active_player_dict[user2_ID].record_chess_move(game_ID, move)
-            reply = "Move registered and confirmed as legal."
-            connection.send(Server.OK + Server.LEN + str(len(reply)) +
-                            "\r\n\r\n" + reply)
+            # make sure it is actually user1's turn to move!
+            if self.active_player_dict[user1_ID].games[game_ID].my_turn:
+                print "REMOVE"
+                self.active_player_dict[user1_ID].record_move(game_ID, move)
+                self.active_player_dict[user2_ID].record_move(game_ID, move)
+                reply = "Move registered and confirmed as legal."
+            else:
+                print "remove"
+                reply = "It isn't your turn to move my friend."
 
         except:
+            reply = ("Chessmove failed. Was the game started via a GameStart "
+                     "request?")
             print "one of the players was offline, log them in and try again"
+        connection.send(Server.OK + Server.LEN + str(len(reply)) +
+                        "\r\n\r\n" + reply)
+
+    def handle_GameStart(self, connection, payload):
+        """
+        Called whenever we receieve a GameStart POST request. This request
+        should be sent by the match instigator, and the instigator will
+        receive in response to their request an OK message as well as
+        confirmation of which player will be using which colour.
+        """
+        user1_ID = ""
+        user2_ID = ""
+        user1_colour = ""
+        user2_colour = ""
+        game_ID = ""
+
+        for lines in payload:
+            lines = lines.split(': ')
+
+            if lines[0] == "From":
+                user1_ID = lines[1]
+            elif lines[0] == "To":
+                user2_ID = lines[1]
+            elif lines[0] == "Game":
+                game_ID = lines[1]
+
+        if random.random() < 0.5:
+            user1_colour = "Black"
+            user2_colour = "White"
+        else:
+            user1_colour = "White"
+            user2_colour = "Black"
+
+        try:
+            self.active_player_dict[user1_ID].begin_game(game_ID, user1_colour)
+            self.active_player_dict[user2_ID].begin_game(game_ID, user2_colour)
+            reply = "Colour: " + user1_colour + "\nGame successfully started."
+        except:
+            print "Failed to start game."
+            reply = "Failed to start game. Does the game already exist?"
+        connection.send(Server.OK + Server.LEN + str(len(reply)) + "\r\n\r\n" +
+                        reply)
 
     def handle_GameStateRequest(self, connection,  payload):
         """
@@ -188,11 +246,15 @@ class Server(object):
             elif lines[0] == "Game":
                 game_ID = lines[1]
 
-        FEN = self.active_player_dict[user_ID].games[game_ID].fen()
-        print "Requested FEN: ", FEN
-        connection.send(
-            Server.OK + Server.TYPE + "FEN\r\n" + Server.LEN + str(len(FEN)) +
-            "\r\n\r\n" + FEN)
+        try:
+            FEN = self.active_player_dict[user_ID].games[game_ID].fen()
+            print "Requested FEN: ", FEN
+            colour = self.active_player_dict[user_ID].games[game_ID].my_colour
+            reply = "FEN: " + FEN + "\r\nColour: " + colour
+        except:
+            reply = "Failed to retrieve game state. Does the game exist?"
+        connection.send(Server.OK + Server.LEN + str(len(reply)) +
+                        "\r\n\r\n" + reply)
 
 
 if __name__ == "__main__":
