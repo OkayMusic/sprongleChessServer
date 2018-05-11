@@ -114,9 +114,9 @@ class Server(object):
             if user_ID not in self.active_users:
                 self.active_users[user_ID] = User(user_ID)
                 self.active_users[user_ID].say_hello_to_boi()
-                reply = "Successfully said hello to boi"
+                reply = "success\r\nSuccessfully said hello to boi"
             else:
-                reply = ("This boi was already flagged as active. This "
+                reply = ("success\r\nThis boi was already flagged as active. This "
                          "is probably another of boi's devices. If you "
                          "see this message frequently it is possible "
                          "that boi is not getting said goodbye to properly.")
@@ -124,7 +124,7 @@ class Server(object):
                             str(len(reply)) + "\r\n\r\n" + reply)
         except:
             # the only way this could fail is if POST request was invalid
-            reply = "user_ID not provided!"
+            reply = "failed\r\nuser_ID not provided!"
             connection.send(BAD, )
 
         print self.active_users
@@ -143,12 +143,12 @@ class Server(object):
             self.active_users[user_ID].say_goodbye_to_boi()
             del self.active_users[user_ID]
             print self.active_users
-            reply = ("Successfully said goodbye to boi, and wrote all his data "
+            reply = ("success\r\nSuccessfully said goodbye to boi, and wrote all his data "
                      "to disk.")
         except Exception as e:
             print e
             print "You probably tried to disconnect a user who was offline"
-            reply = ("Failed AppClose on the serverside, data could be lost. "
+            reply = ("failed\r\n AppClose on the serverside, data could be lost. "
                      "Are you sure that you didn't try to disconnect a user"
                      " who is already offline?")
         connection.send(Server.OK + Server.ACCESS + Server.LEN +
@@ -188,12 +188,12 @@ class Server(object):
                 else:
                     self.active_users[user2_ID].record_move(game_ID, move)
 
-                reply = "Move registered and confirmed as legal."
+                reply = "success\r\nMove registered and confirmed as legal."
             else:
-                reply = "It isn't your turn to move my friend."
+                reply = "success\r\nIt isn't your turn to move my friend."
 
         except:
-            reply = ("Failed chessmove. Was the game started via a GameStart "
+            reply = ("failed\r\n chessmove. Was the game started via a GameStart "
                      "request?")
             print "one of the users was offline, log them in and try again"
         connection.send(Server.OK + Server.ACCESS + Server.LEN + str(len(reply)) +
@@ -227,7 +227,7 @@ class Server(object):
             user2_colour = "White"
         else:
             user1_colour = "White"
-            user2_colour = "Black"
+            user2_colour = "Black"Request
 
         try:
             self.active_users[user1_ID].begin_game(game_ID, user1_colour)
@@ -243,10 +243,10 @@ class Server(object):
             else:
                 self.active_users[user2_ID].begin_game(game_ID, user2_colour)
 
-            reply = "Colour: " + user1_colour + "\nGame successfully started."
+            reply = "success\r\nColour: " + user1_colour + "\nGame successfully started."
         except:
-            print "Failed to start game."
-            reply = "Failed to start game. Does the game already exist?"
+            print "failed\r\n to start game."
+            reply = "failed\r\n to start game. Does the game already exist?"
         connection.send(Server.OK + Server.ACCESS + Server.LEN + str(len(reply)) + "\r\n\r\n" +
                         reply)
 
@@ -269,9 +269,9 @@ class Server(object):
             FEN = self.active_users[user_ID].games[game_ID].fen()
             print "Requested FEN: ", FEN
             colour = self.active_users[user_ID].games[game_ID].my_colour
-            reply = "FEN: " + FEN + "\r\nColour: " + colour
+            reply = "success\r\nFEN: " + FEN + "\r\nColour: " + colour
         except:
-            reply = "Failed to retrieve game state. Does the game exist?"
+            reply = "failed\r\n to retrieve game state. Does the game exist?"
         connection.send(Server.OK + Server.ACCESS + Server.LEN + str(len(reply)) +
                         "\r\n\r\n" + reply)
 
