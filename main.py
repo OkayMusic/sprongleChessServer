@@ -176,12 +176,10 @@ class Server(object):
         try:
             # make sure it is actually user1's turn to move!
             if self.active_player_dict[user1_ID].games[game_ID].my_turn:
-                print "REMOVE"
                 self.active_player_dict[user1_ID].record_move(game_ID, move)
                 self.active_player_dict[user2_ID].record_move(game_ID, move)
                 reply = "Move registered and confirmed as legal."
             else:
-                print "remove"
                 reply = "It isn't your turn to move my friend."
 
         except:
