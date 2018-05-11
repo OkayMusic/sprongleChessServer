@@ -148,7 +148,7 @@ class Server(object):
         except Exception as e:
             print e
             print "You probably tried to disconnect a user who was offline"
-            reply = ("AppClose failed on the serverside, data could be lost. "
+            reply = ("Failed AppClose on the serverside, data could be lost. "
                      "Are you sure that you didn't try to disconnect a user"
                      " who is already offline?")
         connection.send(Server.OK + Server.ACCESS + Server.LEN +
@@ -193,7 +193,7 @@ class Server(object):
                 reply = "It isn't your turn to move my friend."
 
         except:
-            reply = ("Chessmove failed. Was the game started via a GameStart "
+            reply = ("Failed chessmove. Was the game started via a GameStart "
                      "request?")
             print "one of the users was offline, log them in and try again"
         connection.send(Server.OK + Server.ACCESS + Server.LEN + str(len(reply)) +
