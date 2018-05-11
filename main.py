@@ -28,7 +28,7 @@ class Server(object):
         # store all active connections (users) here, key = fb ID
         self.active_users = {}
 
-    def send_message(connection, reply, success=True):
+    def send_message(self, connection, reply, success=True):
         """
         Sends the 200 OK request, along with the access control headers. Later this
         should handle more bois than 200 OK.
@@ -128,16 +128,16 @@ class Server(object):
             if user_ID not in self.active_users:
                 self.active_users[user_ID] = User(user_ID)
                 self.active_users[user_ID].say_hello_to_boi()
-                reply = "success\r\nSuccessfully said hello to boi"
+                reply = "Successfully said hello to boi"
             else:
-                reply = ("success\r\nThis boi was already flagged as active. This "
+                reply = ("This boi was already flagged as active. This "
                          "is probably another of boi's devices. If you "
                          "see this message frequently it is possible "
                          "that boi is not getting said goodbye to properly.")
             self.send_message(connection, reply, success=True)
         except:
             # the only way this could fail is if POST request was invalid
-            reply = "failed\r\nuser_ID not provided!"
+            reply = "user_ID not provided!"
             self.send_message(connection, reply, success=False)
 
         print self.active_users
@@ -156,13 +156,13 @@ class Server(object):
             self.active_users[user_ID].say_goodbye_to_boi()
             del self.active_users[user_ID]
             print self.active_users
-            reply = ("success\r\nSuccessfully said goodbye to boi, and wrote all his data "
+            reply = ("Successfully said goodbye to boi, and wrote all his data "
                      "to disk.")
             self.send_message(connection, reply, success=True)
         except Exception as e:
             print e
             print "You probably tried to disconnect a user who was offline"
-            reply = ("failed\r\n AppClose on the serverside, data could be lost. "
+            reply = (" AppClose on the serverside, data could be lost. "
                      "Are you sure that you didn't try to disconnect a user"
                      " who is already offline?")
             self.send_message(connection, reply, success=False)
@@ -201,13 +201,13 @@ class Server(object):
                 else:
                     self.active_users[user2_ID].record_move(game_ID, move)
 
-                reply = "success\r\nMove registered and confirmed as legal."
+                reply = "Move registered and confirmed as legal."
             else:
-                reply = "success\r\nIt isn't your turn to move my friend."
+                reply = "It isn't your turn to move my friend."
             self.send_message(connection, reply, success=True)
 
         except:
-            reply = ("failed\r\n chessmove. Was the game started via a GameStart "
+            reply = (" chessmove. Was the game started via a GameStart "
                      "request?")
             print "one of the users was offline, log them in and try again"
             self.send_message(connection, reply, success=False)
@@ -256,11 +256,11 @@ class Server(object):
             else:
                 self.active_users[user2_ID].begin_game(game_ID, user2_colour)
 
-            reply = "success\r\nColour: " + user1_colour + "\nGame successfully started."
+            reply = "Colour: " + user1_colour + "\nGame successfully started."
             self.send_message(connection, reply, success=True)
         except:
             print "failed\r\n to start game."
-            reply = "failed\r\n to start game. Does the game already exist?"
+            reply = "to start game. Does the game already exist?"
             self.send_message(connection, reply, success=False)
 
     def handle_GameStateRequest(self, connection,  payload):
@@ -282,10 +282,10 @@ class Server(object):
             FEN = self.active_users[user_ID].games[game_ID].fen()
             print "Requested FEN: ", FEN
             colour = self.active_users[user_ID].games[game_ID].my_colour
-            reply = "success\r\nFEN: " + FEN + "\r\nColour: " + colour
+            reply = "FEN: " + FEN + "\r\nColour: " + colour
             self.send_message(connection, reply, success=True)
         except:
-            reply = "failed\r\n to retrieve game state. Does the game exist?"
+            reply = "to retrieve game state. Does the game exist?"
             self.send_message(connection, reply, success=False)
 
 

@@ -18,8 +18,8 @@ C_GAMESTATEREQUEST = "POST / HTTP/1.1\r\n\r\nContent: GameStateRequest\r\nFrom: 
 
 
 if __name__ == "__main__":
-    target_IP = "sprongle.com"
-    target_port = 80
+    target_IP = "192.168.0.31"
+    target_port = 1336
     BUFSIZE = 1024
 
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
