@@ -12,6 +12,7 @@ class Server(object):
     BAD = "HTTP/1.1 400 Bad Request\r\n"
     LEN = "Content-Length: "
     TYPE = "Content-Type: "
+    ACCESS = "Access-Control-Allow-Origin: *\r\n"
 
     def __init__(self, port):
         """
@@ -119,7 +120,7 @@ class Server(object):
                          "is probably another of boi's devices. If you "
                          "see this message frequently it is possible "
                          "that boi is not getting said goodbye to properly.")
-            connection.send(Server.OK + Server.LEN +
+            connection.send(Server.OK + Server.ACCESS + Server.LEN +
                             str(len(reply)) + "\r\n\r\n" + reply)
         except:
             # the only way this could fail is if POST request was invalid
@@ -150,7 +151,7 @@ class Server(object):
             reply = ("AppClose failed on the serverside, data could be lost. "
                      "Are you sure that you didn't try to disconnect a user"
                      " who is already offline?")
-        connection.send(Server.OK + Server.LEN +
+        connection.send(Server.OK + Server.ACCESS + Server.LEN +
                         str(len(reply)) + "\r\n\r\n" + reply)
 
     def handle_ChessMove(self, connection, payload):
@@ -195,7 +196,7 @@ class Server(object):
             reply = ("Chessmove failed. Was the game started via a GameStart "
                      "request?")
             print "one of the users was offline, log them in and try again"
-        connection.send(Server.OK + Server.LEN + str(len(reply)) +
+        connection.send(Server.OK + Server.ACCESS + Server.LEN + str(len(reply)) +
                         "\r\n\r\n" + reply)
 
     def handle_GameStart(self, connection, payload):
@@ -246,7 +247,7 @@ class Server(object):
         except:
             print "Failed to start game."
             reply = "Failed to start game. Does the game already exist?"
-        connection.send(Server.OK + Server.LEN + str(len(reply)) + "\r\n\r\n" +
+        connection.send(Server.OK + Server.ACCESS + Server.LEN + str(len(reply)) + "\r\n\r\n" +
                         reply)
 
     def handle_GameStateRequest(self, connection,  payload):
@@ -271,7 +272,7 @@ class Server(object):
             reply = "FEN: " + FEN + "\r\nColour: " + colour
         except:
             reply = "Failed to retrieve game state. Does the game exist?"
-        connection.send(Server.OK + Server.LEN + str(len(reply)) +
+        connection.send(Server.OK + Server.ACCESS + Server.LEN + str(len(reply)) +
                         "\r\n\r\n" + reply)
 
 
