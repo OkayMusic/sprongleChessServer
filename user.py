@@ -13,21 +13,21 @@ class User(object):
     welcome to my user class, please enjoy your stay
     """
 
-    def __init__(self, player_ID):
+    def __init__(self, user_ID):
         """
         Init is called every time someone logs back in, so we're going to throw
         all the user's games back into ram and all that good shit. Chess games
         are very cheap, so this should be fine for a good long while.
         """
-        # player's unique sprongleChess ID. One per facebook account
-        self.player_ID = player_ID
-        self.name = ""  # player's irl name mmmmmmmmdata
+        # user's unique sprongleChess ID. One per facebook account
+        self.user_ID = user_ID
+        self.name = ""  # user's irl name mmmmmmmmdata
         #----- more precious user data can go here -----#
 
-        # is the player online on any device? could be online on multiple
+        # is the user online on any device? could be online on multiple
         self.is_online = False
 
-        self.directory = "Data/" + self.player_ID + "/"
+        self.directory = "Data/" + self.user_ID + "/"
 
         # a dict containing a tuple of user's games and info about the game
         # this cant be a bad use of ram!!!!!
@@ -37,8 +37,8 @@ class User(object):
 
     def load_all_games(self):
         """
-        Load all of the player's games into RAM. This should be called when the
-        player logs in. In the future this should be depracated in favour of a
+        Load all of the user's games into RAM. This should be called when the
+        user logs in. In the future this should be depracated in favour of a
         less retarded system.
         """
         file_list = glob.glob(self.directory + '*.pgn')
@@ -60,7 +60,7 @@ class User(object):
 
             # work out which colour the user is playing as
             for keys in PGN.headers:
-                if PGN.headers[keys] == self.player_ID:
+                if PGN.headers[keys] == self.user_ID:
                     self.games[game_ID].my_colour = keys
 
             if (ply_counter % 2 == 0) != (self.games[game_ID].my_colour == "Black"):
@@ -72,7 +72,7 @@ class User(object):
 
     def say_hello_to_boi(self):
         """
-        Set player to be online and load in their chess games.
+        Set user to be online and load in their chess games.
         """
         self.is_online = True
 
@@ -112,7 +112,7 @@ class User(object):
             return
 
     def write_to_disk(self):
-        print "Writing data for user number", self.player_ID, "to disk"
+        print "Writing data for user number", self.user_ID, "to disk"
         fen_games = []
         for keys in self.games:
             game = board_to_game(self.games[keys])
@@ -120,7 +120,7 @@ class User(object):
             game.headers["Site"] = "sprongleChess"
             game.headers["Date"] = datetime.datetime.now(
             ).strftime("%y-%m-%d %H:%M")
-            game.headers[self.games[keys].my_colour] = self.player_ID
+            game.headers[self.games[keys].my_colour] = self.user_ID
             fen_games.append(game)
 
             # if the user doesn't already have a folder, make one for them
