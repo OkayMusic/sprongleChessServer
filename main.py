@@ -25,7 +25,7 @@ class Server(object):
         self.sock.bind(('', self.port))
 
         # store all active connections (users) here, key = fb ID
-        self.active_player_dict = {}
+        self.active_users = {}
 
     def listen(self):
         """
@@ -106,13 +106,13 @@ class Server(object):
             if lines[0] == "Name":
                 user_name = lines[1]
 
-        # now we have this info, we can add the user to the active player dict.
-        # if the user is already in the active player dict, we add this IP to the
+        # now we have this info, we can add the user to the active user dict.
+        # if the user is already in the active user dict, we add this IP to the
         # user's IP_list
         try:
-            if user_ID not in self.active_player_dict:
-                self.active_player_dict[user_ID] = User(user_ID)
-                self.active_player_dict[user_ID].say_hello_to_boi()
+            if user_ID not in self.active_users:
+                self.active_users[user_ID] = User(user_ID)
+                self.active_users[user_ID].say_hello_to_boi()
                 reply = "Successfully said hello to boi"
             else:
                 reply = ("This boi was already flagged as active. This "
@@ -126,7 +126,7 @@ class Server(object):
             reply = "user_ID not provided!"
             connection.send(BAD, )
 
-        print self.active_player_dict
+        print self.active_users
 
     def handle_AppClose(self, connection, payload):
         """
@@ -139,16 +139,16 @@ class Server(object):
             if lines[0] == "From":
                 user_ID = lines[1]
         try:
-            self.active_player_dict[user_ID].say_goodbye_to_boi()
-            del self.active_player_dict[user_ID]
-            print self.active_player_dict
+            self.active_users[user_ID].say_goodbye_to_boi()
+            del self.active_users[user_ID]
+            print self.active_users
             reply = ("Successfully said goodbye to boi, and wrote all his data "
                      "to disk.")
         except Exception as e:
             print e
-            print "You probably tried to disconnect a player who was offline"
+            print "You probably tried to disconnect a user who was offline"
             reply = ("AppClose failed on the serverside, data could be lost. "
-                     "Are you sure that you didn't try to disconnect a player"
+                     "Are you sure that you didn't try to disconnect a user"
                      " who is already offline?")
         connection.send(Server.OK + Server.LEN +
                         str(len(reply)) + "\r\n\r\n" + reply)
@@ -175,9 +175,18 @@ class Server(object):
 
         try:
             # make sure it is actually user1's turn to move!
-            if self.active_player_dict[user1_ID].games[game_ID].my_turn:
-                self.active_player_dict[user1_ID].record_move(game_ID, move)
-                self.active_player_dict[user2_ID].record_move(game_ID, move)
+            if self.active_users[user1_ID].games[game_ID].my_turn:
+                self.active_users[user1_ID].record_move(game_ID, move)
+
+                # user2 could be offline, if so log him in and record move
+                if user2_ID not in self.active_users:
+                    self.active_users[user2_ID] = User(user_ID=user2_ID)
+                    self.active_users[user2_ID].record_move(game_ID, move)
+                    self.active_users[user2_ID].write_to_disk()
+                    del self.active_users[user2_ID]
+                else:
+                    self.active_users[user2_ID].record_move(game_ID, move)
+
                 reply = "Move registered and confirmed as legal."
             else:
                 reply = "It isn't your turn to move my friend."
@@ -185,7 +194,7 @@ class Server(object):
         except:
             reply = ("Chessmove failed. Was the game started via a GameStart "
                      "request?")
-            print "one of the players was offline, log them in and try again"
+            print "one of the users was offline, log them in and try again"
         connection.send(Server.OK + Server.LEN + str(len(reply)) +
                         "\r\n\r\n" + reply)
 
@@ -194,7 +203,7 @@ class Server(object):
         Called whenever we receieve a GameStart POST request. This request
         should be sent by the match instigator, and the instigator will
         receive in response to their request an OK message as well as
-        confirmation of which player will be using which colour.
+        confirmation of which user will be using which colour.
         """
         user1_ID = ""
         user2_ID = ""
@@ -220,8 +229,19 @@ class Server(object):
             user2_colour = "Black"
 
         try:
-            self.active_player_dict[user1_ID].begin_game(game_ID, user1_colour)
-            self.active_player_dict[user2_ID].begin_game(game_ID, user2_colour)
+            self.active_users[user1_ID].begin_game(game_ID, user1_colour)
+
+            # user 1 is guaranteed to be online (he just sent the request)
+            # user 2, however, could be offline or a first time user
+            # we should handle the likely case that user2 is offline!
+            if user2_ID not in self.active_users:
+                self.active_users[user2_ID] = User(user_ID=user2_ID)
+                self.active_users[user2_ID].begin_game(game_ID, user2_colour)
+                self.active_users[user2_ID].write_to_disk()
+                del self.active_users[user2_ID]
+            else:
+                self.active_users[user2_ID].begin_game(game_ID, user2_colour)
+
             reply = "Colour: " + user1_colour + "\nGame successfully started."
         except:
             print "Failed to start game."
@@ -245,9 +265,9 @@ class Server(object):
                 game_ID = lines[1]
 
         try:
-            FEN = self.active_player_dict[user_ID].games[game_ID].fen()
+            FEN = self.active_users[user_ID].games[game_ID].fen()
             print "Requested FEN: ", FEN
-            colour = self.active_player_dict[user_ID].games[game_ID].my_colour
+            colour = self.active_users[user_ID].games[game_ID].my_colour
             reply = "FEN: " + FEN + "\r\nColour: " + colour
         except:
             reply = "Failed to retrieve game state. Does the game exist?"
