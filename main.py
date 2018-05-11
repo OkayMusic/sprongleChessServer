@@ -235,6 +235,11 @@ class Server(object):
             elif lines[0] == "Game":
                 game_ID = lines[1]
 
+        if game_ID in self.active_users[user1_ID].games:
+            reply = "Failed to start game. Does the game already exist?"
+            self.send_message(connection, reply, success=False)
+            return
+
         if random.random() < 0.5:
             user1_colour = "Black"
             user2_colour = "White"
