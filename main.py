@@ -227,7 +227,7 @@ class Server(object):
             user2_colour = "White"
         else:
             user1_colour = "White"
-            user2_colour = "Black"Request
+            user2_colour = "Black"
 
         try:
             self.active_users[user1_ID].begin_game(game_ID, user1_colour)
