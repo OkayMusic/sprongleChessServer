@@ -324,7 +324,7 @@ class Server(object):
 
 if __name__ == "__main__":
     PORT = 80
-    THREADING = False
+    THREADING = True
 
     MainServer = Server(PORT, THREADING)
     MainServer.listen()
