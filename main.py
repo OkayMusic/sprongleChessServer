@@ -293,7 +293,6 @@ class Server(object):
                     del self.active_users[user2_ID]
                 else:
                     self.active_users[user2_ID].record_move(game_ID, move)
-                    self.active_users[user2_ID].write_games()
                 reply = "Move registered and confirmed as legal."
                 self.send_message(connection, reply, success=True)
             else:

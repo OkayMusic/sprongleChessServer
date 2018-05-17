@@ -45,6 +45,7 @@ class User(object):
         try:
             self._games[game_ID].push_san(move)
             self._games[game_ID].my_turn = not self._games[game_ID].my_turn
+            print self._games[game_ID]
             return True
         except:
             return False
