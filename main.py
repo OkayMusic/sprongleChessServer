@@ -86,17 +86,6 @@ class Server(object):
             try:
                 data = connection.recv(bufsize)
 
-                ddos_count = 0
-                # hardly ddos protection but still
-                if data[:4].lowercase != "post":
-                    ddos_count += 1
-                    print ddos_count
-                    reply = ("Username: YellowPeopleHaveSmallerPenises\r\n"
-                             "REGIONLOCKCHINA\r\nPinNumber: FuckYou\r\n")
-                    self.send_message(connection, reply, success=True)
-                    connection.close()
-                    return
-
                 # some protocols make the server close the connection
                 # they do this by sending an empty message
                 # so before trying to parse, we check for an empty message
