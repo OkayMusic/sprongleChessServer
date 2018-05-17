@@ -121,10 +121,13 @@ class Server(object):
                     return
 
                 try:
-                    getattr(self, "handle_" + content_type)(connection, payload)
+                    handler = getattr(self, "handle_" + content_type)
                 except:
                     reply = "Invalid Content header"
                     self.send_message(connection, reply, success=False)
+
+                handler(connection, payload)
+
             except:
                 print "Closing connection.\n\n"
                 connection.close()
