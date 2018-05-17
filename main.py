@@ -126,7 +126,11 @@ class Server(object):
                     reply = "Invalid Content header"
                     self.send_message(connection, reply, success=False)
 
-                handler(connection, payload)
+                try:
+                    handler(connection, payload)
+                except Exception as e:
+                    reply = e
+                    self.send_message(connection, reply, success=False)
 
             except:
                 print "Closing connection.\n\n"
