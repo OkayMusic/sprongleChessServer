@@ -1,5 +1,7 @@
 import socket
 
+HELP = "POST / HTTP/1.1\r\n\r\nContent: Help"
+
 SPRONGLE_LOGIN = "POST / HTTP/1.1\r\n\r\nContent: AppStart\r\nFrom: 1234\r\nName: Sprongle"
 CHOPS_LOGIN = "POST / HTTP/1.1\r\n\r\nContent: AppStart\r\nFrom: 4321\r\nName: Dr Chops"
 
@@ -25,6 +27,7 @@ if __name__ == "__main__":
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect((target_IP, target_port))
 
+    s.send(HELP)
     # s.send(CHOPS_LOGIN)
     # s.send(SPRONGLE_LOGIN)
     # s.send(C_GAMESTART)

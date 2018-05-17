@@ -125,6 +125,14 @@ class User(object):
                 lines = lines.strip().split(': ')
                 setattr(lines[0], lines[1])
 
+    def dict_to_data(self, data_dict):
+        """
+        Parse a dict with keys = data type, value = data value, and give the
+        user the relevant attributes.
+        """
+        for keys in data_dict:
+            setattr(self, keys, data_dict[keys])
+
     def write_data(self):
         """
         Write all of the User attributes, which dont begin with a leading

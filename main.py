@@ -106,6 +106,11 @@ class Server(object):
                     if lines[0] == "Content":
                         content_type = lines[1]
 
+                # check to see whether or not the user is sending a help request
+                if content_type[-4:] == "Help":
+                    self.handle_Help(connection, content_type)
+                    return
+
                 # grab the payload; what we do with the payload depends on the
                 # content type
                 payload = data_list[(data_list.index([""]) + 1):]
@@ -120,13 +125,62 @@ class Server(object):
                 connection.close()
                 return  # end thread execution here
 
+    def handle_Help(self, connection, content_type):
+        """
+        Called whenever we receive any Help POST request.
+
+        Required header field:
+
+        'Content: Help'
+        OR
+        'Content: <ContentType>Help'
+
+        Any additional header fields will be ignored, but will not cause errors
+        if sent.
+
+        On success, if the message was just 'Content: Help' then a list of
+        acceptable content headers will be sent. If the request was of the form
+        'Content: <ContentType>Help' then the docstring for the ContentType's
+        request handler will be sent.
+        """
+        print 1
+        if content_type == "Help":
+            reply = "\r\nAll messages to the server should take the form:\r\n"
+            reply += "'Content: <ContentType>'\\r\\n'Header: <value>'\r\n"
+            reply += "Currently accepted Content types:\r\n\r\n"
+            for attr in dir(self):
+                if attr[:6] == "handle":
+                    if attr[7:] == "Help":
+                        reply += "'" + attr[7:] + "'\r\n"
+                    else:
+                        reply += "'" + attr[7:] + \
+                            "', '" + attr[7:] + "Help'\r\n"
+
+            reply += ("\r\nUse 'Content: <ContentType>Help' headers to get "
+                      "more info on how to use the '<ContentType>' request.")
+            self.send_message(connection, reply, success=True)
+        else:
+            reply = getattr(self, "handle_" +
+                            content_type[:-4]).__doc__
+            self.send_message(connection, reply, success=True)
+
     def handle_AppStart(self, connection, payload):
         """
         Called whenever we receive an AppStart POST request.
-        """
-        headers = ["From", "Name"]
 
-        [user_ID, user_name], excess = self.parse_payload(
+        Required header field:
+
+        'From: <FB_user_ID>'.
+
+        Any additional data should be sent in the format 'DataType: Data', and
+        will be automatically stored by the server. Header fields should be
+        separated by carriage returns.
+
+        Returns a success message on success, failed message on fail.
+        """
+        headers = ["From"]
+
+        [user_ID], excess = self.parse_payload(
             connection, payload, headers)
 
         # now we have this info, we can add the user to the active user dict.
@@ -134,10 +188,8 @@ class Server(object):
         # user's IP_list
         try:
             if user_ID not in self.active_users:
-                try:
-                    self.active_users[user_ID] = User(user_ID)
-                except Exception as e:
-                    print e
+                self.active_users[user_ID] = User(user_ID)
+
                 reply = "Successfully said hello to boi"
             else:
                 reply = ("This boi was already flagged as active. This "
@@ -146,13 +198,24 @@ class Server(object):
                          "that boi is not getting said goodbye to properly.")
             self.send_message(connection, reply, success=True)
         except:
-            # the only way this could fail is if POST request was invalid
-            reply = "user_ID not provided!"
+            # not sure how this could fail, but regardless it should be handled
+            reply = "Failed to log in user."
             self.send_message(connection, reply, success=False)
 
     def handle_AppClose(self, connection, payload):
         """
         Called whenever we receive an AppClose POST request.
+
+        Required header field:
+
+        'From: <FB_user_ID>'.
+
+        Any additional header fields will be ignored, but will not cause errors
+        if sent.
+
+        Returns a success message on success, failed message on fail. On
+        success, all user data and game data is written to disk.
+        WARNING: data could be lost if users are not logged out properly.
         """
         headers = ["From"]
         [user_ID], excess = self.parse_payload(connection, payload, headers)
@@ -172,6 +235,20 @@ class Server(object):
     def handle_ChessMove(self, connection, payload):
         """
         Called whenever we receive a ChessMove POST request.
+
+        Required header fields:
+
+        'From: <FB_user_ID>' # user_ID of player sending the message
+        'To: <FB_user_ID>' # user_ID of opponent
+        'Game: <FB_game_ID>' # FB generated ID of the game in play
+        'Move: <SAN chess move>' # this is checked for legality by the server
+
+        Any additional header fields will be ignored, but will not cause errors
+        if sent.
+
+        Returns confirmation that the move was legal on success, on failure the
+        reason for failure is sent (but could still contain bugs or misleading
+        messages, more testing needed).
         """
         headers = ["From", "To", "Game", "Move"]
         [user1_ID, user2_ID, game_ID, move], excess = self.parse_payload(
@@ -204,9 +281,20 @@ class Server(object):
     def handle_GameStart(self, connection, payload):
         """
         Called whenever we receieve a GameStart POST request. This request
-        should be sent by the match instigator, and the instigator will
-        receive in response to their request an OK message as well as
-        confirmation of which user will be using which colour.
+        should be sent only by the match instigator.
+
+        Required header fields:
+
+        'From: <FB_user_ID>' # user_ID of player sending the message
+        'To: <FB_user_ID>' # user_ID of opponent
+        'Game: <FB_game_ID>' # FB generated ID of the game in play
+
+        Any additional header fields will be ignored, but will not cause errors
+        if sent.
+
+        Returns confirmation that the game was started successfully on success,
+        as well as the colour that the instigator will be using. On failure
+        a failed message will be sent.
         """
         headers = ["From", "To", "Game"]
 
@@ -249,7 +337,24 @@ class Server(object):
 
     def handle_GameStateRequest(self, connection,  payload):
         """
-        Called whenever we receive a GameStateRequest POST request.
+        Called whenever we receieve a GameStateRequest POST request.
+
+        Required header fields:
+
+        'From: <FB_user_ID>' # user_ID of player sending the message
+        'Game: <FB_game_ID>' # FB generated ID of the game in play
+
+        Any additional header fields will be ignored, but will not cause errors
+        if sent.
+
+        On success, returns the current FEN, the user's colour and whether or
+        not it is the user's turn to move in the format:
+
+        'FEN: <FEN>'
+        'Colour: <user's colour>'
+        'IsYourMove: <True/False>'
+
+        On failure, a failed message will be sent.
         """
         # the headers we require for a valid GameStateRequest
         headers = ["From", "Game"]
@@ -291,7 +396,7 @@ class Server(object):
                 values[headers.index(lines[0])] = lines[1]
             else:
                 excess[lines[0]] = lines[1]
-        return values, headers
+        return values, excess
 
     def send_message(self, connection, reply, success=True):
         """
