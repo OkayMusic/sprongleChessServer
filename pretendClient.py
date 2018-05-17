@@ -20,21 +20,21 @@ C_GAMESTATEREQUEST = "POST / HTTP/1.1\r\n\r\nContent: GameStateRequest\r\nFrom: 
 
 
 if __name__ == "__main__":
-    target_IP = "172.17.1.38"
+    target_IP = "192.168.0.31"
     target_port = 80
     BUFSIZE = 1024
 
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect((target_IP, target_port))
 
-    s.send(HELP)
+    # s.send(HELP)
     # s.send(CHOPS_LOGIN)
     # s.send(SPRONGLE_LOGIN)
     # s.send(C_GAMESTART)
-    # s.send(C_CHESSMOVE)
-    # s.send(C_GAMESTATEREQUEST)
+    # s.send(S_CHESSMOVE)
+    # s.send(S_GAMESTATEREQUEST)
     # s.send(CHOPS_LOGOUT)
-    # s.send(SPRONGLE_LOGOUT)
+    s.send(SPRONGLE_LOGOUT)
 
     data = s.recv(BUFSIZE)
     print data

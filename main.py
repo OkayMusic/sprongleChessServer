@@ -116,6 +116,8 @@ class Server(object):
                     content_type = "Help"
                 if content_type[-4:] == "Help":
                     self.handle_Help(connection, content_type)
+                    print "Closing connection.\n\n"
+                    connection.close()
                     return
 
                 try:
@@ -126,7 +128,7 @@ class Server(object):
             except:
                 print "Closing connection.\n\n"
                 connection.close()
-                return  # end thread execution here
+                return
 
     def handle_Help(self, connection, content_type):
         """
@@ -270,7 +272,11 @@ class Server(object):
         try:
             # make sure it is actually user1's turn to move!
             if self.active_users[user1_ID]._games[game_ID].my_turn:
-                self.active_users[user1_ID].record_move(game_ID, move)
+                # check for move validity
+                if not self.active_users[user1_ID].record_move(game_ID, move):
+                    reply = "Invalid move attempt."
+                    self.send_message(connection, reply, success=False)
+                    return
 
                 # user2 could be offline, if so log him in and record move
                 if user2_ID not in self.active_users:

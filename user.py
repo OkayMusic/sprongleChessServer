@@ -40,16 +40,14 @@ class User(object):
 
     def record_move(self, game_ID, move):
         """
-        Record move in board indexed by game_ID, checking for validity
+        Record move in board indexed by game_ID, checking for validity.
         """
         try:
             self._games[game_ID].push_san(move)
             self._games[game_ID].my_turn = not self._games[game_ID].my_turn
+            return True
         except:
-            print "Move not legal OR incorrectly formatted OR game not started"
-
-        print "FEN: ", self._games[game_ID].fen()
-        # print "Move stack: ", self.games[game_ID][0].move_stack
+            return False
 
     def begin_game(self, game_ID, colour):
         """
