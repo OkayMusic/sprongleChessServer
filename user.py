@@ -65,8 +65,10 @@ class User(object):
     def get_gamestate(self, game_ID):
         fen = self._games[game_ID].fen()
         colour = self._games[game_ID].my_colour
+        turn = str(self._games[game_ID].my_turn)
 
-        return "FEN: " + fen + "\r\nColour: " + colour
+        return ("FEN: " + fen + "\r\nColour: " + colour + "\r\nIsYourMove: " +
+                turn)
 
     def load_games(self):
         """

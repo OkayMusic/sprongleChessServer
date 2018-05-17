@@ -23,7 +23,11 @@ class MyDict(dict):
         printstr = '{'
         for items in self:
             printstr += "'" + items + "': " + str(self[items]) + ', '
-        print printstr[:-2] + '}'  # remove trailing comma, close bracket
+
+        if self:
+            printstr = printstr[:-2]  # remove trailing comma if dict not empty
+
+        print printstr + '}'
 
 
 class Server(object):
@@ -106,17 +110,11 @@ class Server(object):
                 # content type
                 payload = data_list[(data_list.index([""]) + 1):]
 
-                # NEEDS MORE I N T R O S P E C T I O N
-                if content_type == "AppStart":
-                    self.handle_AppStart(connection, payload)
-                elif content_type == "GameStart":
-                    self.handle_GameStart(connection, payload)
-                elif content_type == "ChessMove":
-                    self.handle_ChessMove(connection, payload)
-                elif content_type == "GameStateRequest":
-                    self.handle_GameStateRequest(connection, payload)
-                elif content_type == "AppClose":
-                    self.handle_AppClose(connection, payload)
+                try:
+                    getattr(self, "handle_" + content_type)(connection, payload)
+                except:
+                    reply = "Invalid Content header"
+                    self.send_message(connection, reply, success=False)
             except:
                 print "Closing connection.\n\n"
                 connection.close()
@@ -238,7 +236,7 @@ class Server(object):
             if user2_ID not in self.active_users:
                 self.active_users[user2_ID] = User(user_ID=user2_ID)
                 self.active_users[user2_ID].begin_game(game_ID, user2_colour)
-                self.active_users[user2_ID].write_to_disk()
+                self.active_users[user2_ID].write_games()
                 del self.active_users[user2_ID]
             else:
                 self.active_users[user2_ID].begin_game(game_ID, user2_colour)
