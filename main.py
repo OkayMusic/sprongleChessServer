@@ -98,22 +98,25 @@ class Server(object):
                 print "*----------------DATA----------------*\n", data
                 print "*------------------------------------*"
 
-                content_type = ""
                 # useful boi for parsing
                 data_list = [x.split(': ') for x in data.split("\r\n")]
+                # grab the payload; what we do with the payload depends on the
+                # content type
+                payload = data_list[(data_list.index([""]) + 1):]
+
                 # parse whatever we were sent to find the content type
+                content_type = ""
                 for lines in data_list:
                     if lines[0] == "Content":
                         content_type = lines[1]
 
                 # check to see whether or not the user is sending a help request
+                if payload[0][0].lower() == "help" or \
+                        payload[0][0].lower() == "h":
+                    content_type = "Help"
                 if content_type[-4:] == "Help":
                     self.handle_Help(connection, content_type)
                     return
-
-                # grab the payload; what we do with the payload depends on the
-                # content type
-                payload = data_list[(data_list.index([""]) + 1):]
 
                 try:
                     getattr(self, "handle_" + content_type)(connection, payload)
@@ -131,6 +134,8 @@ class Server(object):
 
         Required header field:
 
+        'Help'
+        OR
         'Content: Help'
         OR
         'Content: <ContentType>Help'
@@ -145,9 +150,12 @@ class Server(object):
         """
         print 1
         if content_type == "Help":
-            reply = "\r\nAll messages to the server should take the form:\r\n"
-            reply += "'Content: <ContentType>'\\r\\n'Header: <value>'\r\n"
-            reply += "Currently accepted Content types:\r\n\r\n"
+            reply = ("\r\nAll messages to the server should take the form:\r\n\r\n"
+                     "Content: <ContentType>\r\n"
+                     "MoreHeaders: <MoreValues>\r\n...\r\n\r\n"
+                     "Where at least as many additional headers and values \r\n"
+                     "are given as are required by the content type handler.\r\n"
+                     "Currently accepted Content types:\r\n\r\n")
             for attr in dir(self):
                 if attr[:6] == "handle":
                     if attr[7:] == "Help":
@@ -156,8 +164,13 @@ class Server(object):
                         reply += "'" + attr[7:] + \
                             "', '" + attr[7:] + "Help'\r\n"
 
-            reply += ("\r\nUse 'Content: <ContentType>Help' headers to get "
-                      "more info on how to use the '<ContentType>' request.")
+            reply += ("\r\nIn order to find out what additional header and\r\n"
+                      "value fields you should supply in order to send a valid\r\n"
+                      "ContentType request, send the server a:\r\n"
+                      "'Content: <ContentType>Help'\r\n"
+                      "message. This will give you more info on how to use the\r\n"
+                      "ContentType request, and let you know what kind of\r\n"
+                      "response you should expect\r\n")
             self.send_message(connection, reply, success=True)
         else:
             reply = getattr(self, "handle_" +

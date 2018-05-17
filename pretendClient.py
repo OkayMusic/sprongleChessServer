@@ -1,6 +1,6 @@
 import socket
 
-HELP = "POST / HTTP/1.1\r\n\r\nContent: Help"
+HELP = "POST / HTTP/1.1\r\n\r\nH"
 
 SPRONGLE_LOGIN = "POST / HTTP/1.1\r\n\r\nContent: AppStart\r\nFrom: 1234\r\nName: Sprongle"
 CHOPS_LOGIN = "POST / HTTP/1.1\r\n\r\nContent: AppStart\r\nFrom: 4321\r\nName: Dr Chops"
