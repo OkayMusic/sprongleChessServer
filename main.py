@@ -98,8 +98,9 @@ class Server(object):
                 print "*----------------DATA----------------*\n", data
                 print "*------------------------------------*"
 
-                # useful boi for parsing
-                data_list = [x.split(': ') for x in data.split("\r\n")]
+                # no deps on whitespace or carriage returns
+                data_list = [x.replace(' ', '').lower().split(':')
+                             for x in data.replace('\r', '').split("\n")]
                 # grab the payload; what we do with the payload depends on the
                 # content type
                 payload = data_list[(data_list.index([""]) + 1):]
@@ -107,15 +108,15 @@ class Server(object):
                 # parse whatever we were sent to find the content type
                 content_type = ""
                 for lines in data_list:
-                    if lines[0] == "Content":
+                    if lines[0] == "content":
                         content_type = lines[1]
 
                 # check to see whether or not the user is sending a help request
                 if payload[0][0].lower() == "help" or \
                         payload[0][0].lower() == "h":
-                    content_type = "Help"
-                if content_type[-4:] == "Help":
-                    self.handle_Help(connection, content_type)
+                    content_type = "help"
+                if content_type[-4:] == "help":
+                    self.handle_help(connection, content_type)
                     print "Closing connection.\n\n"
                     connection.close()
                     return
@@ -126,18 +127,14 @@ class Server(object):
                     reply = "Invalid Content header"
                     self.send_message(connection, reply, success=False)
 
-                try:
-                    handler(connection, payload)
-                except Exception as e:
-                    reply = e
-                    self.send_message(connection, reply, success=False)
+                handler(connection, payload)
 
             except:
                 print "Closing connection.\n\n"
                 connection.close()
                 return
 
-    def handle_Help(self, connection, content_type):
+    def handle_help(self, connection, content_type):
         """
         Called whenever we receive any Help POST request.
 
@@ -158,7 +155,7 @@ class Server(object):
         request handler will be sent.
         """
         print 1
-        if content_type == "Help":
+        if content_type == "help":
             reply = ("\r\nAll messages to the server should take the form:\r\n\r\n"
                      "Content: <ContentType>\r\n"
                      "MoreHeaders: <MoreValues>\r\n...\r\n\r\n"
@@ -167,7 +164,7 @@ class Server(object):
                      "Currently accepted Content types:\r\n\r\n")
             for attr in dir(self):
                 if attr[:6] == "handle":
-                    if attr[7:] == "Help":
+                    if attr[7:] == "help":
                         reply += "'" + attr[7:] + "'\r\n"
                     else:
                         reply += "'" + attr[7:] + \
@@ -186,7 +183,7 @@ class Server(object):
                             content_type[:-4]).__doc__
             self.send_message(connection, reply, success=True)
 
-    def handle_AppStart(self, connection, payload):
+    def handle_appstart(self, connection, payload):
         """
         Called whenever we receive an AppStart POST request.
 
@@ -200,7 +197,7 @@ class Server(object):
 
         Returns a success message on success, failed message on fail.
         """
-        headers = ["From"]
+        headers = ["from"]
 
         [user_ID], excess = self.parse_payload(
             connection, payload, headers)
@@ -224,7 +221,7 @@ class Server(object):
             reply = "Failed to log in user."
             self.send_message(connection, reply, success=False)
 
-    def handle_AppClose(self, connection, payload):
+    def handle_appclose(self, connection, payload):
         """
         Called whenever we receive an AppClose POST request.
 
@@ -239,7 +236,7 @@ class Server(object):
         success, all user data and game data is written to disk.
         WARNING: data could be lost if users are not logged out properly.
         """
-        headers = ["From"]
+        headers = ["from"]
         [user_ID], excess = self.parse_payload(connection, payload, headers)
 
         try:
@@ -254,7 +251,7 @@ class Server(object):
                      " who is already offline?")
             self.send_message(connection, reply, success=False)
 
-    def handle_ChessMove(self, connection, payload):
+    def handle_chessmove(self, connection, payload):
         """
         Called whenever we receive a ChessMove POST request.
 
@@ -272,7 +269,7 @@ class Server(object):
         reason for failure is sent (but could still contain bugs or misleading
         messages, more testing needed).
         """
-        headers = ["From", "To", "Game", "Move"]
+        headers = ["from", "to", "game", "move"]
         [user1_ID, user2_ID, game_ID, move], excess = self.parse_payload(
             connection, payload, headers)
 
@@ -304,7 +301,7 @@ class Server(object):
                      "request?")
             self.send_message(connection, reply, success=False)
 
-    def handle_GameStart(self, connection, payload):
+    def handle_gamestart(self, connection, payload):
         """
         Called whenever we receieve a GameStart POST request. This request
         should be sent only by the match instigator.
@@ -322,7 +319,7 @@ class Server(object):
         as well as the colour that the instigator will be using. On failure
         a failed message will be sent.
         """
-        headers = ["From", "To", "Game"]
+        headers = ["from", "to", "game"]
 
         [user1_ID, user2_ID, game_ID], excess = self.parse_payload(
             connection, payload, headers)
@@ -361,7 +358,7 @@ class Server(object):
             reply = "Failed to start game. Does the game already exist?"
             self.send_message(connection, reply, success=False)
 
-    def handle_GameStateRequest(self, connection,  payload):
+    def handle_gamestaterequest(self, connection,  payload):
         """
         Called whenever we receieve a GameStateRequest POST request.
 
@@ -383,7 +380,7 @@ class Server(object):
         On failure, a failed message will be sent.
         """
         # the headers we require for a valid GameStateRequest
-        headers = ["From", "Game"]
+        headers = ["from", "game"]
 
         [user_ID, game_ID], excess = self.parse_payload(
             connection, payload, headers)

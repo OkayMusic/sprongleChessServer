@@ -23,8 +23,8 @@ MAG_GAMESTART = "POST / HTTP/1.1\r\n\r\nContent: GameStart\r\nFrom: 1337\r\nTo: 
 
 S_CHESSMOVE = "POST / HTTP/1.1\r\n\r\nContent: ChessMove\r\nFrom: 1234\r\nTo: 4321\r\nGame: 1\r\nMove: c5"
 C_CHESSMOVE = "POST / HTTP/1.1\r\n\r\nContent: ChessMove\r\nFrom: 4321\r\nTo: 1234\r\nGame: 1\r\nMove: c5"
-MICK_CHESSMOVE = "POST / HTTP/1.1\r\n\r\nContent: ChessMove\r\nFrom: 6969\r\nTo: 1337\r\nGame: 69\r\nMove: c5"
-MAG_CHESSMOVE = "POST / HTTP/1.1\r\n\r\nContent: ChessMove\r\nFrom: 1337\r\nTo: 6969\r\nGame: 69\r\nMove: c4"
+MICK_CHESSMOVE = "POST / HTTP/1.1\r\n\r\nContent: ChessMove\r\nFrom: 6969\r\nTo: 1337\r\nGame: 69\r\nMove: d4"
+MAG_CHESSMOVE = "POST / HTTP/1.1\r\n\r\nContent: ChessMove\r\nFrom: 1337\r\nTo: 6969\r\nGame: 69\r\nMove: c5"
 
 
 S_GAMESTATEREQUEST = "POST / HTTP/1.1\r\n\r\nContent: GameStateRequest\r\nFrom: 1234\r\nGame: 1"
@@ -44,7 +44,7 @@ if __name__ == "__main__":
     # s.send(MICHAEL_LOGIN)
     # s.send(MAGNET_LOGIN)
     # s.send(MICK_GAMESTART)
-    # s.send(MICK_CHESSMOVE)
+    s.send(MICK_CHESSMOVE)
     # s.send(MAG_CHESSMOVE)
     # s.send(MICK_GAMESTATEREQUEST)
     # s.send(MAG_GAMESTATEREQUEST)
