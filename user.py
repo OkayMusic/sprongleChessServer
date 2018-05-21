@@ -1,8 +1,8 @@
 import os
 import glob
-import chess
-import errno
 import datetime
+import threading
+import chess
 
 from chess import Board
 from convenience import board_to_game
@@ -21,6 +21,9 @@ class User(object):
         defined with a leading underscore. These are attributes that we dont
         want to automatically write to disk using write_data.
         """
+        # for thread unsafe operations, we can choose to access the user class
+        # with a lock
+        self.lock = threading.RLock()
         # user's unique sprongleChess ID. One per facebook account
         self.user_ID = user_ID
 
@@ -40,123 +43,136 @@ class User(object):
 
     def record_move(self, game_ID, move):
         """
-        Record move in board indexed by game_ID, checking for validity.
+        Record move in board indexed by game_ID, checking for validity. 
         """
-        try:
-            self._games[game_ID].push_san(move)
-            self._games[game_ID].my_turn = not self._games[game_ID].my_turn
-            # writes game of player to disk after each legal move
-            # this is great for persistence, but a little clunky.
-            self.write_game(game_ID)
+        with self.lock:
+            try:
+                print "User: " + self.user_ID + " thinks move is: " + move
+                self._games[game_ID].push_san(move)
+                self._games[game_ID].my_turn = not self._games[game_ID].my_turn
+                # writes game of player to disk after each legal move
+                # this is great for persistence, but a little clunky.
+                self.write_game(game_ID)
 
-            return True
-        except:
-            return False
+                return True
+            except:
+                return False
 
     def begin_game(self, game_ID, colour):
         """
         Register a new game in self.games
         """
-        self._games[game_ID] = Board()
-        self._games[game_ID].my_colour = colour
-        if colour == "White":
-            self._games[game_ID].my_turn = True
-        else:
-            self._games[game_ID].my_turn = False
+        with self.lock:
+            self._games[game_ID] = Board()
+            self._games[game_ID].my_colour = colour
+            if colour == "White":
+                self._games[game_ID].my_turn = True
+            else:
+                self._games[game_ID].my_turn = False
+
+            self.write_game(game_ID)
 
     def get_gamestate(self, game_ID):
-        fen = self._games[game_ID].fen()
-        colour = self._games[game_ID].my_colour
-        turn = str(self._games[game_ID].my_turn)
-        threefold = str(self._games[game_ID].can_claim_threefold_repetition())
-        fivefold = str(self._games[game_ID].is_fivefold_repetition())
+        with self.lock:
+            fen = self._games[game_ID].fen()
+            colour = self._games[game_ID].my_colour
+            turn = str(self._games[game_ID].my_turn)
+            threefold = str(
+                self._games[game_ID].can_claim_threefold_repetition())
+            fivefold = str(self._games[game_ID].is_fivefold_repetition())
 
-        return ("FEN: " + fen + "\r\nColour: " + colour + "\r\nIsYourMove: " +
-                turn + "\r\nThreeFold: " + threefold + "\r\nFiveFold: " +
-                fivefold)
+            return ("FEN: " + fen + "\r\nColour: " + colour + "\r\nIsYourMove: "
+                    + turn + "\r\nThreeFold: " + threefold + "\r\nFiveFold: " +
+                    fivefold)
 
     def load_games(self):
         """
         Load all of the user's games into self._games
         """
-        file_list = glob.glob(self._directory + '*.pgn')
+        with self.lock:
+            file_list = glob.glob(self._directory + '*.pgn')
 
-        for files in file_list:
-            open_game = open(files)
-            game_ID = files.split('/')[-1].split('.')[0]
-            self._games[game_ID] = Board()
+            for files in file_list:
+                open_game = open(files)
+                game_ID = files.split('/')[-1].split('.')[0]
+                self._games[game_ID] = Board()
 
-            PGN = chess.pgn.read_game(open_game)
+                PGN = chess.pgn.read_game(open_game)
 
-            # prepare the board
-            for moves in PGN.main_line():
-                self._games[game_ID].push(moves)
+                # prepare the board
+                for moves in PGN.main_line():
+                    self._games[game_ID].push(moves)
 
-            # work out which colour the user is playing as
-            for keys in PGN.headers:
-                if PGN.headers[keys] == self.user_ID:
-                    self._games[game_ID].my_colour = keys
+                # work out which colour the user is playing as
+                for keys in PGN.headers:
+                    if PGN.headers[keys] == self.user_ID:
+                        self._games[game_ID].my_colour = keys
 
-            if (len(list(PGN.main_line())) % 2 == 0) != \
-                    (self._games[game_ID].my_colour == "Black"):
-                self._games[game_ID].my_turn = True
-            else:
-                self._games[game_ID].my_turn = False
+                if (len(list(PGN.main_line())) % 2 == 0) != \
+                        (self._games[game_ID].my_colour == "Black"):
+                    self._games[game_ID].my_turn = True
+                else:
+                    self._games[game_ID].my_turn = False
 
     def write_game(self, game_ID):
         """
         Writes a specific game to disk.
         """
-        # for debugging purposes, it is useful to print the boards as we go
-        print "\nWriting user " + self.user_ID + "'s game with ID " + \
-            game_ID + " to disk, the following board position written: \n"
-        print self._games[game_ID]
-        game = board_to_game(self._games[game_ID])
+        with self.lock:
+            # for debugging purposes, it is useful to print the boards as we go
+            print "\nWriting user " + self.user_ID + "'s game with ID " + \
+                game_ID + " to disk, the following board position written: \n"
+            print self._games[game_ID]
+            game = board_to_game(self._games[game_ID])
 
-        game.headers["Site"] = "sprongleChess"
-        game.headers["Date"] = datetime.datetime.now(
-        ).strftime("%y-%m-%d %H:%M")
-        game.headers[self._games[game_ID].my_colour] = self.user_ID
+            game.headers["Site"] = "sprongleChess"
+            game.headers["Date"] = datetime.datetime.now(
+            ).strftime("%y-%m-%d %H:%M")
+            game.headers[self._games[game_ID].my_colour] = self.user_ID
 
-        with open(self._directory + game_ID + '.pgn', 'w') as open_file:
-            open_file.write(str(game))
+            with open(self._directory + game_ID + '.pgn', 'w') as open_file:
+                open_file.write(str(game))
 
     def write_games(self):
         """
         Writes all of the player's games to disk. Called on logout.
         """
-        print "Writing games of user number", self.user_ID, "to disk"
-        for keys in self._games:
-            self.write_game(keys)
+        with self.lock:
+            print "Writing games of user number", self.user_ID, "to disk"
+            for keys in self._games:
+                self.write_game(keys)
 
     def load_data(self):
         """
         Load all previously collected data on the user into RAM.
         """
-        with open(self._directory + User._data_file, 'w+') as in_file:
-            for lines in in_file:
-                lines = lines.strip().split(': ')
-                setattr(lines[0], lines[1])
+        with self.lock:
+            with open(self._directory + User._data_file, 'w+') as in_file:
+                for lines in in_file:
+                    lines = lines.strip().split(': ')
+                    setattr(lines[0], lines[1])
 
     def dict_to_data(self, data_dict):
         """
         Parse a dict with keys = data type, value = data value, and give the
         user the relevant attributes.
         """
-        for keys in data_dict:
-            setattr(self, keys, data_dict[keys])
+        with self.lock:
+            for keys in data_dict:
+                setattr(self, keys, data_dict[keys])
 
     def write_data(self):
         """
         Write all of the User attributes, which dont begin with a leading
         underscore, to disk.
         """
-        data = [x for x in dir(self) if not x.startswith('_')
-                and not callable(getattr(self, x))]
+        with self.lock:
+            data = [x for x in dir(self) if not x.startswith('_')
+                    and not callable(getattr(self, x))]
 
-        with open(self._directory + User._data_file, 'w') as open_file:
-            for attrs in data:
-                open_file.write(attrs + ': ' + getattr(self, attrs) + '\n')
+            with open(self._directory + User._data_file, 'w') as open_file:
+                for attrs in data:
+                    open_file.write(attrs + ': ' + getattr(self, attrs) + '\n')
 
     def say_goodbye_to_boi(self):
         """

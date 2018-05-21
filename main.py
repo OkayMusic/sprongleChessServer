@@ -5,18 +5,18 @@ import thread
 from user import User
 
 
-class MyDict(dict):
+class VerboseDict(dict):
     """
     Inherit from MyDict if you want the dict to be printed whenever __setitem__
     or __delitem__ are called.
     """
 
     def __setitem__(self, key, value):
-        super(MyDict, self).__setitem__(key, value)
+        super(VerboseDict, self).__setitem__(key, value)
         self.print_dict()
 
     def __delitem__(self, key):
-        super(MyDict, self).__delitem__(key)
+        super(VerboseDict, self).__delitem__(key)
         self.print_dict()
 
     def print_dict(self):
@@ -53,8 +53,7 @@ class Server(object):
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.sock.bind(('', self.port))
 
-        # the managed attribute _active users. See the property for more info
-        self.active_users = MyDict({})
+        self.active_users = VerboseDict({})
 
     def listen(self):
         """
@@ -64,10 +63,10 @@ class Server(object):
         client.
         """
         self.sock.listen(5)
-        self.sock.settimeout(self.timeout)
         print "Server listening on port", self.port, "\n"
         while True:
             connection, addr = self.sock.accept()
+            connection.settimeout(self.timeout)
             if self.is_threading:
                 threading.Thread(target=self.listen_to_boi,
                                  args=(connection, addr)).start()
@@ -155,7 +154,6 @@ class Server(object):
         'Content: <ContentType>Help' then the docstring for the ContentType's
         request handler will be sent.
         """
-        print 1
         if content_type == "help":
             reply = ("\r\nAll messages to the server should take the form:\r\n\r\n"
                      "Content: <ContentType>\r\n"
@@ -347,7 +345,6 @@ class Server(object):
             if user2_ID not in self.active_users:
                 self.active_users[user2_ID] = User(user_ID=user2_ID)
                 self.active_users[user2_ID].begin_game(game_ID, user2_colour)
-                self.active_users[user2_ID].write_games()
                 del self.active_users[user2_ID]
             else:
                 self.active_users[user2_ID].begin_game(game_ID, user2_colour)
@@ -358,7 +355,7 @@ class Server(object):
             reply = "Failed to start game. Does the game already exist?"
             self.send_message(connection, reply, success=False)
 
-    def handle_gamestaterequest(self, connection,  payload):
+    def handle_gamestaterequest(self, connection, payload):
         """
         Called whenever we receieve a GameStateRequest POST request.
 
@@ -406,8 +403,8 @@ class Server(object):
         Any additional header fields will be ignored, but will not cause errors
         if sent.
 
-        Succeedes when your opponent makes a move. On success, returns the 
-        current FEN, the user's colour and whether or not it is the user's turn 
+        Succeedes when your opponent makes a move. On success, returns the
+        current FEN, the user's colour and whether or not it is the user's turn
         to move in the format:
 
         'FEN: <FEN>'
@@ -425,11 +422,12 @@ class Server(object):
 
         init_fen = self.active_users[user_ID].get_gamestate(game_ID)
 
-        # hang while the gamestate hasn't changed
+        # block while the gamestate hasn't changed
         while self.active_users[user_ID].get_gamestate(game_ID) == init_fen:
             pass
 
         reply = self.active_users[user_ID].get_gamestate(game_ID)
+
         self.send_message(connection, reply, success=True)
 
     def parse_payload(self, connection, payload, headers):
@@ -464,7 +462,7 @@ class Server(object):
     @staticmethod
     def send_message(connection, reply, success=True):
         """
-        Sends the 200 OK request, along with the access control headers. Later 
+        Sends the 200 OK request, along with the access control headers. Later
         this should handle more bois than 200 OK.
         """
 
@@ -474,8 +472,8 @@ class Server(object):
             reply = "failed\r\n" + reply
         print reply
 
-        connection.send(Server.OK + Server.ACCESS + Server.LEN + str(len(reply)) +
-                        "\r\n\r\n" + reply)
+        connection.send(Server.OK + Server.ACCESS + Server.LEN +
+                        str(len(reply)) + "\r\n\r\n" + reply)
 
     def kill_thead(self, connection):
         """
@@ -490,9 +488,9 @@ class Server(object):
 
 
 if __name__ == "__main__":
-    PORT = 1337
+    PORT = 80
     THREADING = True
-    TIMEOUT = 300
+    TIMEOUT = 0
 
     MainServer = Server(port=PORT, timeout=TIMEOUT, is_threading=THREADING)
     MainServer.listen()
