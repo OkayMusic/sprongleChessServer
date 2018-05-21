@@ -46,6 +46,7 @@ class User(object):
             self._games[game_ID].push_san(move)
             self._games[game_ID].my_turn = not self._games[game_ID].my_turn
             print self._games[game_ID]
+
             return True
         except:
             return False
@@ -75,8 +76,6 @@ class User(object):
         """
         file_list = glob.glob(self._directory + '*.pgn')
 
-        key_list = []  # we can get the keys from the globbed filenames
-        pgn_list = []  # and we can get pgn objects from the files
         for files in file_list:
             open_game = open(files)
             game_ID = files.split('/')[-1].split('.')[0]

@@ -40,12 +40,13 @@ class Server(object):
     TYPE = "Content-Type: "
     ACCESS = "Access-Control-Allow-Origin: *\r\n"
 
-    def __init__(self, port, is_threading):
+    def __init__(self, port, timeout, is_threading):
         """
         Initializes the server on the specified port
         """
         print "Initializing server..."
         self.port = port
+        self.timeout = timeout
         self.is_threading = is_threading
         self.sock = socket.socket(
             family=socket.AF_INET, type=socket.SOCK_STREAM)
@@ -63,10 +64,10 @@ class Server(object):
         client.
         """
         self.sock.listen(5)
+        self.sock.settimeout(self.timeout)
         print "Server listening on port", self.port, "\n"
         while True:
             connection, addr = self.sock.accept()
-            connection.settimeout(5)  # time out connection after 5 secs
             if self.is_threading:
                 threading.Thread(target=self.listen_to_boi,
                                  args=(connection, addr)).start()
@@ -392,6 +393,45 @@ class Server(object):
             reply = "Unable to retrieve game state. Does the game exist?"
             self.send_message(connection, reply, success=False)
 
+    def handle_waitmove(self, connection, payload):
+        """
+        Called whenever we receive a WaitMove POST request.
+
+        Required header fields:
+
+        'From: <FB_user_ID>' # user_ID of player sending the message
+        'Game: <FB_game_ID>' # FB generated ID of the game in play
+
+        Any additional header fields will be ignored, but will not cause errors
+        if sent.
+
+        Succeedes when your opponent makes a move. On success, returns the 
+        current FEN, the user's colour and whether or not it is the user's turn 
+        to move in the format:
+
+        'FEN: <FEN>'
+        'Colour: <user's colour>'
+        'IsYourMove: <True/False>'
+
+        On failure, a failed message will be sent. No server message will be
+        sent on timeout.
+        """
+        headers = ["from", "game"]
+        [user_ID, game_ID], excess = self.parse_payload(
+            connection, payload, headers)
+
+        init_fen = self.active_users[user_ID].get_gamestate(game_ID)
+
+        # hang while the gamestate hasn't changed
+        while self.active_users[user_ID].get_gamestate(game_ID) == init_fen:
+            pass
+
+        reply = self.active_users[user_ID].get_gamestate(game_ID)
+        self.send_message(connection, reply, success=True)
+
+    def handle_cleardb(self, connection, payload):
+        pass
+
     def parse_payload(self, connection, payload, headers):
         """
         Parse the payload of an HTTPRequest looking for our required custom
@@ -421,10 +461,11 @@ class Server(object):
                 excess[lines[0]] = lines[1]
         return values, excess
 
-    def send_message(self, connection, reply, success=True):
+    @staticmethod
+    def send_message(connection, reply, success=True):
         """
-        Sends the 200 OK request, along with the access control headers. Later this
-        should handle more bois than 200 OK.
+        Sends the 200 OK request, along with the access control headers. Later 
+        this should handle more bois than 200 OK.
         """
 
         if success:
@@ -451,6 +492,7 @@ class Server(object):
 if __name__ == "__main__":
     PORT = 80
     THREADING = True
+    TIMEOUT = 300
 
-    MainServer = Server(PORT, THREADING)
+    MainServer = Server(port=PORT, timeout=TIMEOUT, is_threading=THREADING)
     MainServer.listen()
