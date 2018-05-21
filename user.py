@@ -45,7 +45,9 @@ class User(object):
         try:
             self._games[game_ID].push_san(move)
             self._games[game_ID].my_turn = not self._games[game_ID].my_turn
-            print self._games[game_ID]
+            # writes game of player to disk after each legal move
+            # this is great for persistence, but a little clunky.
+            self.write_game(game_ID)
 
             return True
         except:
@@ -101,21 +103,31 @@ class User(object):
             else:
                 self._games[game_ID].my_turn = False
 
+    def write_game(self, game_ID):
+        """
+        Writes a specific game to disk.
+        """
+        # for debugging purposes, it is useful to print the boards as we go
+        print "\nWriting user " + self.user_ID + "'s game with ID " + \
+            game_ID + " to disk, the following board position written: \n"
+        print self._games[game_ID]
+        game = board_to_game(self._games[game_ID])
+
+        game.headers["Site"] = "sprongleChess"
+        game.headers["Date"] = datetime.datetime.now(
+        ).strftime("%y-%m-%d %H:%M")
+        game.headers[self._games[game_ID].my_colour] = self.user_ID
+
+        with open(self._directory + game_ID + '.pgn', 'w') as open_file:
+            open_file.write(str(game))
+
     def write_games(self):
+        """
+        Writes all of the player's games to disk. Called on logout.
+        """
         print "Writing games of user number", self.user_ID, "to disk"
-        fen_games = []
         for keys in self._games:
-            game = board_to_game(self._games[keys])
-
-            game.headers["Site"] = "sprongleChess"
-            game.headers["Date"] = datetime.datetime.now(
-            ).strftime("%y-%m-%d %H:%M")
-            game.headers[self._games[keys].my_colour] = self.user_ID
-            fen_games.append(game)
-
-            with open(self._directory + keys + '.pgn', 'w') as open_file:
-                open_file.write(str(game))
-            print game
+            self.write_game(keys)
 
     def load_data(self):
         """

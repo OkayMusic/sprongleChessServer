@@ -287,7 +287,6 @@ class Server(object):
                 if user2_ID not in self.active_users:
                     self.active_users[user2_ID] = User(user_ID=user2_ID)
                     self.active_users[user2_ID].record_move(game_ID, move)
-                    self.active_users[user2_ID].write_games()
                     del self.active_users[user2_ID]
                 else:
                     self.active_users[user2_ID].record_move(game_ID, move)
@@ -491,7 +490,7 @@ class Server(object):
 
 
 if __name__ == "__main__":
-    PORT = 80
+    PORT = 1337
     THREADING = True
     TIMEOUT = 300
 
