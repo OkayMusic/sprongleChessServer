@@ -48,9 +48,9 @@ if __name__ == "__main__":
     # s.send(MICHAEL_LOGIN)
     # s.send(MAGNET_LOGIN)
     # s.send(MICK_GAMESTART)
-    s.send(MICK_CHESSMOVE)
+    # s.send(MICK_CHESSMOVE)
     # s.send(MAG_CHESSMOVE)
-    # s.send(MICK_GAMESTATEREQUEST)
+    s.send(MICK_GAMESTATEREQUEST)
     # s.send(MAG_GAMESTATEREQUEST)
     # s.send(MAG_WAITMOVE)
 

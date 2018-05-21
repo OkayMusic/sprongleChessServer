@@ -66,9 +66,12 @@ class User(object):
         fen = self._games[game_ID].fen()
         colour = self._games[game_ID].my_colour
         turn = str(self._games[game_ID].my_turn)
+        threefold = str(self._games[game_ID].can_claim_threefold_repetition())
+        fivefold = str(self._games[game_ID].is_fivefold_repetition())
 
         return ("FEN: " + fen + "\r\nColour: " + colour + "\r\nIsYourMove: " +
-                turn)
+                turn + "\r\nThreeFold: " + threefold + "\r\nFiveFold: " +
+                fivefold)
 
     def load_games(self):
         """

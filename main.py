@@ -375,8 +375,10 @@ class Server(object):
         not it is the user's turn to move in the format:
 
         'FEN: <FEN>'
-        'Colour: <user's colour>'
-        'IsYourMove: <True/False>'
+        'Colour: <user's colour>' # deprecated and will be removed
+        'IsYourMove: <True/False>' # deprecated and will be removed
+        'ThreeFold: <True/False>' # threefold repetition draw available
+        'FiveFold: <True/False>' # fivefold repetition draw forced
 
         On failure, a failed message will be sent.
         """
@@ -410,8 +412,10 @@ class Server(object):
         to move in the format:
 
         'FEN: <FEN>'
-        'Colour: <user's colour>'
-        'IsYourMove: <True/False>'
+        'Colour: <user's colour>' # deprecated and will be removed
+        'IsYourMove: <True/False>' # deprecated and will be removed
+        'ThreeFold: <True/False>' # threefold repetition draw available
+        'FiveFold: <True/False>' # fivefold repetition draw forced
 
         On failure, a failed message will be sent. No server message will be
         sent on timeout.
@@ -428,9 +432,6 @@ class Server(object):
 
         reply = self.active_users[user_ID].get_gamestate(game_ID)
         self.send_message(connection, reply, success=True)
-
-    def handle_cleardb(self, connection, payload):
-        pass
 
     def parse_payload(self, connection, payload, headers):
         """
